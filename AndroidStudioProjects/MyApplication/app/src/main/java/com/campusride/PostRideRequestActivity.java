@@ -279,7 +279,7 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             }
         });
         
-        // Also add a text watcher to geocode as user types (with delay to avoid too many calls)
+        // Also add a text watcher to provide location suggestions as user types
         sourceEditText.addTextChangedListener(new TextWatcher() {
             private Handler handler = new Handler();
             private Runnable geocodeRunnable;
@@ -292,6 +292,15 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 // Cancel any pending geocoding when text changes
                 if (geocodeRunnable != null) {
                     handler.removeCallbacks(geocodeRunnable);
+                }
+                
+                // Provide suggestions based on input (this is a basic implementation)
+                String input = s.toString().trim();
+                if (input.length() > 2) { // Only search if user has typed more than 2 characters
+                    // In a full implementation, you would make an API call to get suggestions
+                    // For now, we just show the geocoding results as the user continues typing
+                    geocodeRunnable = () -> provideLocationSuggestions(input, 0); // 0 for source
+                    handler.postDelayed(geocodeRunnable, 500); // 0.5 second delay for suggestions
                 }
             }
 
@@ -319,6 +328,13 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 // Cancel any pending geocoding when text changes
                 if (geocodeRunnable != null) {
                     handler.removeCallbacks(geocodeRunnable);
+                }
+                
+                // Provide suggestions based on input (this is a basic implementation)
+                String input = s.toString().trim();
+                if (input.length() > 2) { // Only search if user has typed more than 2 characters
+                    geocodeRunnable = () -> provideLocationSuggestions(input, 1); // 1 for destination
+                    handler.postDelayed(geocodeRunnable, 500); // 0.5 second delay for suggestions
                 }
             }
 
@@ -386,6 +402,32 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             Log.e(TAG, "Geocoding error: " + e.getMessage());
             String locationName = locationType == 0 ? "Source" : "Destination";
             Toast.makeText(this, "Error geocoding " + locationName.toLowerCase() + " location", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * Provides location suggestions based on partial text input using Geocoder
+     * @param input The partial text input from user
+     * @param locationType 0 for source, 1 for destination
+     */
+    private void provideLocationSuggestions(String input, int locationType) {
+        if (input.isEmpty()) return;
+        
+        // Use Geocoder to find potential matches for the input text
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            // Get up to 5 suggestions for the input
+            List<Address> suggestions = geocoder.getFromLocationName(input, 5);
+            
+            if (suggestions != null && !suggestions.isEmpty()) {
+                Log.d(TAG, "Found " + suggestions.size() + " suggestions for: " + input);
+                // In a proper implementation, you would create a dropdown or suggestion list
+                // to display these suggestions to the user for selection
+            } else {
+                Log.d(TAG, "No suggestions found for: " + input);
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error getting suggestions: " + e.getMessage());
         }
     }
     
