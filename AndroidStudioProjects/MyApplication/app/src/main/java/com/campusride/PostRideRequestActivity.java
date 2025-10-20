@@ -38,6 +38,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.firebase.auth.FirebaseUser;
@@ -257,16 +258,23 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     }
     
     private void setupPlacesAutocomplete() {
-        // Make the text fields editable to allow direct input
-        sourceEditText.setFocusableInTouchMode(true); // Make it editable
-        destinationEditText.setFocusableInTouchMode(true);
+        // Initialize Google Places SDK if needed (though it's already done in onCreate)
         
-        // Add text change listeners to geocode locations as user types
+        // Set up click listeners for both source and destination to trigger Places Autocomplete
+        sourceEditText.setOnClickListener(v -> {
+            openPlacesAutocomplete(1000); // 1000 for source
+        });
+        
+        destinationEditText.setOnClickListener(v -> {
+            openPlacesAutocomplete(1001); // 1001 for destination
+        });
+        
+        // Also maintain the geocoding functionality for manual text input
         sourceEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 String text = sourceEditText.getText().toString().trim();
-                // Only geocode if the text is not "Current Location" (i.e., it's a user-entered location)
-                if (!"Current Location".equals(text)) {
+                // Only geocode if it's a user-entered location (not one set by Places)
+                if (!text.startsWith("Current Location") && !isSelectingFromPlaces) {
                     geocodeLocation(text, 0); // 0 for source
                 }
             }
@@ -274,12 +282,15 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         
         destinationEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
-                // When user finishes typing in destination field, geocode the location
-                geocodeLocation(destinationEditText.getText().toString().trim(), 1); // 1 for destination
+                String text = destinationEditText.getText().toString().trim();
+                // Only geocode if it's a user-entered location (not one set by Places)
+                if (!isSelectingFromPlaces) {
+                    geocodeLocation(text, 1); // 1 for destination
+                }
             }
         });
         
-        // Also add a text watcher to geocode as user types (with delay to avoid too many calls)
+        // Add text watcher to geocode as user types (with delay to avoid too many calls)
         sourceEditText.addTextChangedListener(new TextWatcher() {
             private Handler handler = new Handler();
             private Runnable geocodeRunnable;
@@ -288,18 +299,18 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Cancel any pending geocoding when text changes
+                if (geocodeRunnable != null) {
+                    handler.removeCallbacks(geocodeRunnable);
+                }
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
                 String text = s.toString().trim();
-                // Only geocode if the text is not "Current Location" (i.e., it's a user-entered location)
-                if (!"Current Location".equals(text)) {
-                    // Remove any pending runnable
-                    if (geocodeRunnable != null) {
-                        handler.removeCallbacks(geocodeRunnable);
-                    }
-                    
+                // Only geocode if it's a user-entered location (not one set by Places)
+                if (!text.startsWith("Current Location") && !isSelectingFromPlaces && !text.isEmpty()) {
                     // Post a new runnable to geocode after a delay
                     geocodeRunnable = () -> geocodeLocation(text, 0); // 0 for source
                     handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
@@ -315,20 +326,117 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // Remove any pending runnable
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Cancel any pending geocoding when text changes
                 if (geocodeRunnable != null) {
                     handler.removeCallbacks(geocodeRunnable);
                 }
-                
-                // Post a new runnable to geocode after a delay
-                geocodeRunnable = () -> geocodeLocation(s.toString().trim(), 1); // 1 for destination
-                handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String text = s.toString().trim();
+                // Only geocode if it's a user-entered location (not one set by Places)
+                if (!isSelectingFromPlaces && !text.isEmpty()) {
+                    // Post a new runnable to geocode after a delay
+                    geocodeRunnable = () -> geocodeLocation(text, 1); // 1 for destination
+                    handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
+                }
             }
         });
+    }
+    
+    // Add a flag to track when user is selecting from Places Autocomplete
+    private boolean isSelectingFromPlaces = false;
+    
+    private void openPlacesAutocomplete(int requestCode) {
+        // Create a list of fields to return from the Place object
+        List<com.google.android.libraries.places.api.model.Place.Field> fields = 
+            Arrays.asList(
+                com.google.android.libraries.places.api.model.Place.Field.ID,
+                com.google.android.libraries.places.api.model.Place.Field.NAME,
+                com.google.android.libraries.places.api.model.Place.Field.LAT_LNG,
+                com.google.android.libraries.places.api.model.Place.Field.ADDRESS
+            );
+
+        // Create the autocomplete intent
+        com.google.android.libraries.places.widget.Autocomplete.IntentBuilder builder = 
+            new com.google.android.libraries.places.widget.Autocomplete.IntentBuilder(
+                com.google.android.libraries.places.widget.AutocompleteActivityMode.OVERLAY, fields);
+        
+        // Limit to India
+        builder.setLocationRestriction(
+            com.google.android.gms.maps.model.LatLngBounds.builder()
+                .include(new com.google.android.gms.maps.model.LatLng(8.0, 68.0))  // SW corner of India
+                .include(new com.google.android.gms.maps.model.LatLng(37.0, 98.0)) // NE corner of India
+                .build()
+        );
+
+        try {
+            Intent intent = builder.build(this);
+            startActivityForResult(intent, requestCode);
+        } catch (Exception e) {
+            Log.e(TAG, "Places API error: " + e.getMessage());
+            // Fallback: Show a message to the user to enter location manually
+            Toast.makeText(this, "Places API not available. Please enter location manually.", Toast.LENGTH_LONG).show();
+        }
+    }
+    
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == 1000) { // Source selection
+            com.google.android.libraries.places.api.model.Place place = 
+                com.google.android.libraries.places.widget.Autocomplete
+                    .getPlaceFromIntent(data);
+            if (resultCode == RESULT_OK && place != null) {
+                isSelectingFromPlaces = true;
+                sourceLatLng = place.getLatLng();
+                sourceAddress = place.getAddress();
+                sourceEditText.setText(place.getName());
+                
+                // Update the map
+                updateMarkersAndRoute();
+                
+                // Reset the flag after a short delay to avoid triggering geocoding
+                new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
+            } else if (resultCode == RESULT_CANCELED) {
+                // User cancelled the operation
+                Log.d(TAG, "Source location selection cancelled");
+            } else {
+                com.google.android.gms.common.api.Status status = 
+                    com.google.android.libraries.places.widget.Autocomplete
+                        .getStatusFromIntent(data);
+                Log.e(TAG, "Place selection error: " + status.getStatusMessage());
+                Toast.makeText(this, "Error selecting source: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == 1001) { // Destination selection
+            com.google.android.libraries.places.api.model.Place place = 
+                com.google.android.libraries.places.widget.Autocomplete
+                    .getPlaceFromIntent(data);
+            if (resultCode == RESULT_OK && place != null) {
+                isSelectingFromPlaces = true;
+                destinationLatLng = place.getLatLng();
+                destinationAddress = place.getAddress();
+                destinationEditText.setText(place.getName());
+                
+                // Update the map
+                updateMarkersAndRoute();
+                
+                // Reset the flag after a short delay to avoid triggering geocoding
+                new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
+            } else if (resultCode == RESULT_CANCELED) {
+                // User cancelled the operation
+                Log.d(TAG, "Destination location selection cancelled");
+            } else {
+                com.google.android.gms.common.api.Status status = 
+                    com.google.android.libraries.places.widget.Autocomplete
+                        .getStatusFromIntent(data);
+                Log.e(TAG, "Place selection error: " + status.getStatusMessage());
+                Toast.makeText(this, "Error selecting destination: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }
     }
     
     /**
