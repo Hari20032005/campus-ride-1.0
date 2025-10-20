@@ -95,12 +95,16 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         // Initialize the activity result launchers for source and destination
         sourceLocationLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            result -> handlePlaceSelection(result, 0) // 0 for source
+            result -> {
+                handlePlaceSelection(result, 0); // 0 for source
+            }
         );
         
         destinationLocationLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
-            result -> handlePlaceSelection(result, 1) // 1 for destination
+            result -> {
+                handlePlaceSelection(result, 1); // 1 for destination
+            }
         );
     }
 
