@@ -19,6 +19,10 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderResponse;
+import androidx.activity.result.contract.ActivityResultContracts;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
@@ -67,6 +71,10 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     private Polyline routePolyline;
     private String sourceAddress, destinationAddress;
     
+    // Activity Result Launchers for modern Places Autocomplete
+    private ActivityResultLauncher<Intent> sourceLocationLauncher;
+    private ActivityResultLauncher<Intent> destinationLocationLauncher;
+    
     // For Places API
     private AutocompleteSupportFragment sourceAutocomplete, destinationAutocomplete;
 
@@ -82,8 +90,22 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
         initViews();
         initMap();
+        initActivityLaunchers(); // Initialize the activity result launchers
         setupPlacesAutocomplete();
         setClickListeners();
+    }
+    
+    private void initActivityLaunchers() {
+        // Initialize the activity result launchers for source and destination
+        sourceLocationLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> handlePlaceSelection(result, 0) // 0 for source
+        );
+        
+        destinationLocationLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> handlePlaceSelection(result, 1) // 1 for destination
+        );
     }
 
     @Override
@@ -262,11 +284,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         
         // Set up click listeners for both source and destination to trigger Places Autocomplete
         sourceEditText.setOnClickListener(v -> {
-            openPlacesAutocomplete(1000); // 1000 for source
+            openPlacesAutocomplete(0); // 0 for source
         });
         
         destinationEditText.setOnClickListener(v -> {
-            openPlacesAutocomplete(1001); // 1001 for destination
+            openPlacesAutocomplete(1); // 1 for destination
         });
         
         // Also maintain the geocoding functionality for manual text input
@@ -349,7 +371,7 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     // Add a flag to track when user is selecting from Places Autocomplete
     private boolean isSelectingFromPlaces = false;
     
-    private void openPlacesAutocomplete(int requestCode) {
+    private void openPlacesAutocomplete(int locationType) {
         // Create a list of fields to return from the Place object
         List<com.google.android.libraries.places.api.model.Place.Field> fields = 
             Arrays.asList(
@@ -374,7 +396,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
         try {
             Intent intent = builder.build(this);
-            startActivityForResult(intent, requestCode);
+            if (locationType == 0) { // Source
+                sourceLocationLauncher.launch(intent);
+            } else { // Destination
+                destinationLocationLauncher.launch(intent);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Places API error: " + e.getMessage());
             // Fallback: Show a message to the user to enter location manually
@@ -382,59 +408,49 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         }
     }
     
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        
-        if (requestCode == 1000) { // Source selection
-            com.google.android.libraries.places.api.model.Place place = 
-                com.google.android.libraries.places.widget.Autocomplete
-                    .getPlaceFromIntent(data);
-            if (resultCode == RESULT_OK && place != null) {
-                isSelectingFromPlaces = true;
-                sourceLatLng = place.getLatLng();
-                sourceAddress = place.getAddress();
-                sourceEditText.setText(place.getName());
+    private void handlePlaceSelection(androidx.activity.result.ActivityResult result, int locationType) {
+        if (result.getResultCode() == RESULT_OK) {
+            Intent data = result.getData();
+            if (data != null) {
+                com.google.android.libraries.places.api.model.Place place = 
+                    com.google.android.libraries.places.widget.Autocomplete
+                        .getPlaceFromIntent(data);
                 
-                // Update the map
-                updateMarkersAndRoute();
-                
-                // Reset the flag after a short delay to avoid triggering geocoding
-                new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
-            } else if (resultCode == RESULT_CANCELED) {
-                // User cancelled the operation
+                if (place != null) {
+                    isSelectingFromPlaces = true;
+                    
+                    if (locationType == 0) { // Source
+                        sourceLatLng = place.getLatLng();
+                        sourceAddress = place.getAddress();
+                        sourceEditText.setText(place.getName());
+                    } else { // Destination
+                        destinationLatLng = place.getLatLng();
+                        destinationAddress = place.getAddress();
+                        destinationEditText.setText(place.getName());
+                    }
+                    
+                    // Update the map
+                    updateMarkersAndRoute();
+                    
+                    // Reset the flag after a short delay to avoid triggering geocoding
+                    new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
+                }
+            }
+        } else if (result.getResultCode() == RESULT_CANCELED) {
+            // User cancelled the operation
+            if (locationType == 0) {
                 Log.d(TAG, "Source location selection cancelled");
             } else {
-                com.google.android.gms.common.api.Status status = 
-                    com.google.android.libraries.places.widget.Autocomplete
-                        .getStatusFromIntent(data);
-                Log.e(TAG, "Place selection error: " + status.getStatusMessage());
-                Toast.makeText(this, "Error selecting source: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
-            }
-        } else if (requestCode == 1001) { // Destination selection
-            com.google.android.libraries.places.api.model.Place place = 
-                com.google.android.libraries.places.widget.Autocomplete
-                    .getPlaceFromIntent(data);
-            if (resultCode == RESULT_OK && place != null) {
-                isSelectingFromPlaces = true;
-                destinationLatLng = place.getLatLng();
-                destinationAddress = place.getAddress();
-                destinationEditText.setText(place.getName());
-                
-                // Update the map
-                updateMarkersAndRoute();
-                
-                // Reset the flag after a short delay to avoid triggering geocoding
-                new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
-            } else if (resultCode == RESULT_CANCELED) {
-                // User cancelled the operation
                 Log.d(TAG, "Destination location selection cancelled");
-            } else {
-                com.google.android.gms.common.api.Status status = 
-                    com.google.android.libraries.places.widget.Autocomplete
-                        .getStatusFromIntent(data);
+            }
+        } else {
+            // There was an error status
+            com.google.android.gms.common.api.Status status = 
+                com.google.android.libraries.places.widget.Autocomplete
+                    .getStatusFromIntent(result.getData());
+            if (status != null) {
                 Log.e(TAG, "Place selection error: " + status.getStatusMessage());
-                Toast.makeText(this, "Error selecting destination: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Error selecting location: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
             }
         }
     }
