@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors (following Material 3 color roles) -->
+    <color name="primary">#FF6750A4</color>  <!-- Purple 60 for light theme -->
+    <color name="on_primary">#FFFFFFFF</color>
+    <color name="primary_container">#FFEADDFF</color>  <!-- Purple 95 for light theme -->
+    <color name="on_primary_container">#FF21005D</color>  <!-- Purple 30 for light theme -->
+    
+    <color name="primary_variant">#FF3700B3</color>  <!-- Deeper purple for specific accents -->
+    <color name="primary_light">#EADDFF</color>  <!-- Added back for compatibility -->
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#FF625B71</color>  <!-- Gray Purple 40 for light theme -->
+    <color name="on_secondary">#FFFFFFFF</color>
+    <color name="secondary_container">#FFE8DEF8</color>  <!-- Gray Purple 90 for light theme -->
+    <color name="on_secondary_container">#FF1D192B</color>  <!-- Gray Purple 10 for light theme -->
+    <color name="secondary_variant">#FF018786</color>  <!-- Added back for compatibility -->
+    
+    <!-- Tertiary Colors -->
+    <color name="tertiary">#FF7D5260</color>  <!-- Reddish Purple 40 -->
+    <color name="on_tertiary">#FFFFFFFF</color>
+    <color name="tertiary_container">#FFFFD8E4</color>
+    <color name="on_tertiary_container">#FF31111D</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#FFFFFFFF</color>
+    <color name="on_background">#FF1C1B1F</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="on_surface">#FF1C1B1F</color>
+    <color name="surface_variant">#FFE7E0EC</color>
+    <color name="on_surface_variant">#FF49454F</color>
+    
+    <!-- Outline Colors -->
+    <color name="outline">#FF79747E</color>
+    <color name="outline_variant">#FFCAC4D0</color>
+    
+    <!-- Error Colors -->
+    <color name="error">#FFB3261E</color>
+    <color name="on_error">#FFFFFFFF</color>
+    <color name="error_container">#FFF9DEDC</color>
+    <color name="on_error_container">#FF410E0B</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#FF4CAF50</color>
+    <color name="on_success">#FFFFFFFF</color>
+    <color name="success_container">#FFD1E7D1</color>
+    <color name="on_success_container">#FF0F3717</color>
+    <color name="warning">#FFFFC107</color>
+    <color name="on_warning">#FF000000</color>
+    <color name="warning_container">#FFFFFFC7</color>
+    <color name="on_warning_container">#FF201B00</color>
+    <color name="info">#FF2196F3</color>
+    
+    <!-- Neutral Colors -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="light_gray">#FFF5F5F5</color>
+    <color name="gray">#FF9E9E9E</color>
+    <color name="dark_gray">#FF616161</color>
+    <color name="black">#FF000000</color>
+    
+    <!-- Additional Colors for UI Elements -->
+    <color name="purple_500">#FF6750A4</color>
+    <color name="orange_500">#FFFF9800</color>
+    <color name="green_500">#FF4CAF50</color>
+    <color name="red_500">#FFB3261E</color>
+    
+    <!-- Transparent -->
+    <color name="transparent">#00000000</color>
+    
+    <!-- Scrim Color -->
+    <color name="scrim">#99000000</color>
+</resources>

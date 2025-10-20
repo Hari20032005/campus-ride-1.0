@@ -1,0 +1,114 @@
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea
+.gradle/
+/build/
+.cxx/
+.cmake/
+.externalNativeBuild
+cxx/
+*.swp
+.DS_Store
+captures/
+*.log
+.~lock.
+
+# Android Studio
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Gradle
+.gradle/
+build/
+
+# APKs
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Debug Files
+*.log
+
+# IntelliJ IDEA artifacts
+*.iws
+*.iml
+*.ipr
+*.idea
+
+# Android specific
+local.properties
+.settings/
+loadavg
+*.jks
+*.keystore
+!gradle/wrapper/gradle-wrapper.jar
+!/app/src/main/res/drawable/
+!/app/src/main/res/drawable-hdpi/
+!/app/src/main/res/drawable-mdpi/
+!/app/src/main/res/drawable-xhdpi/
+!/app/src/main/res/drawable-xxhdpi/
+!/app/src/main/res/drawable-xxxhdpi/
+
+# Temp files
+*~
+# Some editors create this
+.~lock.
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Windows
+[Tt]humbs.db
+*.DS_Store
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archive
+*.7z
+*.rar
+*.gz
+*.tar
+*.zip
+*.iso
+*.dmg
+*.bin
