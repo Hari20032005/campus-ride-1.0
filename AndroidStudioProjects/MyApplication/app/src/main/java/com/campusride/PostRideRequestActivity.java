@@ -58,7 +58,7 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     private static final String TAG = "PostRideRequest";
     
     private EditText sourceEditText, destinationEditText, dateEditText, timeEditText;
-    private Button postRequestButton;
+    private Button postRequestButton, useCurrentLocationButton;
     private TextView distanceTextView, timeTextView, fareTextView;
     private SupportMapFragment mapFragment;
     private GoogleMap mMap;
@@ -243,6 +243,7 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         dateEditText = findViewById(R.id.dateEditText);
         timeEditText = findViewById(R.id.timeEditText);
         postRequestButton = findViewById(R.id.postRequestButton);
+        useCurrentLocationButton = findViewById(R.id.useCurrentLocationButton);
         distanceTextView = findViewById(R.id.distanceTextView);
         timeTextView = findViewById(R.id.timeTextView);
         fareTextView = findViewById(R.id.fareTextView);
@@ -321,13 +322,6 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
             }
         });
-        
-        // Add a button or functionality to use current location for source
-        // For now, we'll add a long-click listener as a temporary solution
-        sourceEditText.setOnLongClickListener(v -> {
-            useCurrentLocationAsSource();
-            return true; // consume the event
-        });
     }
     
     /**
@@ -403,6 +397,13 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             @Override
             public void onClick(View v) {
                 postRideRequest();
+            }
+        });
+
+        useCurrentLocationButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                useCurrentLocationAsSource();
             }
         });
     }
