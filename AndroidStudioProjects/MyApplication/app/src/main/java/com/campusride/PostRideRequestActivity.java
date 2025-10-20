@@ -264,8 +264,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         // Add text change listeners to geocode locations as user types
         sourceEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
-                // When user finishes typing in source field, geocode the location
-                geocodeLocation(sourceEditText.getText().toString().trim(), 0); // 0 for source
+                String text = sourceEditText.getText().toString().trim();
+                // Only geocode if the text is not "Current Location" (i.e., it's a user-entered location)
+                if (!"Current Location".equals(text)) {
+                    geocodeLocation(text, 0); // 0 for source
+                }
             }
         });
         
@@ -289,14 +292,18 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
             @Override
             public void afterTextChanged(Editable s) {
-                // Remove any pending runnable
-                if (geocodeRunnable != null) {
-                    handler.removeCallbacks(geocodeRunnable);
+                String text = s.toString().trim();
+                // Only geocode if the text is not "Current Location" (i.e., it's a user-entered location)
+                if (!"Current Location".equals(text)) {
+                    // Remove any pending runnable
+                    if (geocodeRunnable != null) {
+                        handler.removeCallbacks(geocodeRunnable);
+                    }
+                    
+                    // Post a new runnable to geocode after a delay
+                    geocodeRunnable = () -> geocodeLocation(text, 0); // 0 for source
+                    handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
                 }
-                
-                // Post a new runnable to geocode after a delay
-                geocodeRunnable = () -> geocodeLocation(s.toString().trim(), 0); // 0 for source
-                handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
             }
         });
         
@@ -427,10 +434,53 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                     // Use current location as source
                     sourceLatLng = new LatLng(location.getLatitude(), location.getLongitude());
                     
-                    // Reverse geocode to get address (in a real app, you'd use Geocoding API)
-                    // For now, we'll use a generic "Current Location" text
-                    sourceAddress = "Current Location";
-                    sourceEditText.setText("Current Location");
+                    // Reverse geocode to get the actual address for display
+                    Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                    try {
+                        List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                        
+                        if (addresses != null && !addresses.isEmpty()) {
+                            // Get a more user-friendly address
+                            Address addr = addresses.get(0);
+                            StringBuilder addressText = new StringBuilder();
+                            
+                            // Try to build a concise address string
+                            String thoroughfare = addr.getThoroughfare(); // Street name
+                            String locality = addr.getLocality(); // City
+                            String subLocality = addr.getSubLocality(); // Area/neighbourhood
+                            
+                            if (thoroughfare != null) {
+                                addressText.append(thoroughfare);
+                                if (subLocality != null) {
+                                    addressText.append(", ").append(subLocality);
+                                } else if (locality != null) {
+                                    addressText.append(", ").append(locality);
+                                }
+                            } else if (subLocality != null) {
+                                addressText.append(subLocality);
+                                if (locality != null) {
+                                    addressText.append(", ").append(locality);
+                                }
+                            } else if (locality != null) {
+                                addressText.append(locality);
+                            } else {
+                                // Fallback: use coordinates as string
+                                addressText.append("Current Location (").append(location.getLatitude()).append(", ").append(location.getLongitude()).append(")");
+                            }
+                            
+                            sourceAddress = addressText.toString();
+                        } else {
+                            // If reverse geocoding fails, just use coordinates
+                            sourceAddress = "Current Location (" + location.getLatitude() + ", " + location.getLongitude() + ")";
+                        }
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error reverse geocoding location: " + e.getMessage());
+                        // If reverse geocoding fails, just use coordinates
+                        sourceAddress = "Current Location (" + location.getLatitude() + ", " + location.getLongitude() + ")";
+                    }
+                    
+                    // Set the address in the text field
+                    sourceEditText.setText(sourceAddress);
                     
                     updateMarkersAndRoute();
                     
