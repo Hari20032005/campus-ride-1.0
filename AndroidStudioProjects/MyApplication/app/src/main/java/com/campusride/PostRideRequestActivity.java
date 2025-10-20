@@ -19,9 +19,6 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentActivity;
@@ -69,10 +66,6 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     private LatLng sourceLatLng, destinationLatLng;
     private Polyline routePolyline;
     private String sourceAddress, destinationAddress;
-    
-    // Activity Result Launchers for modern Places Autocomplete
-    private ActivityResultLauncher<Intent> sourceLocationLauncher;
-    private ActivityResultLauncher<Intent> destinationLocationLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,27 +79,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
         initViews();
         initMap();
-        initActivityLaunchers(); // Initialize the activity result launchers
         setupPlacesAutocomplete();
         setClickListeners();
     }
     
-    private void initActivityLaunchers() {
-        // Initialize the activity result launchers for source and destination
-        sourceLocationLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                handlePlaceSelection(result, 0); // 0 for source
-            }
-        );
-        
-        destinationLocationLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                handlePlaceSelection(result, 1); // 1 for destination
-            }
-        );
-    }
+
 
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
@@ -280,23 +257,16 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     }
     
     private void setupPlacesAutocomplete() {
-        // Initialize Google Places SDK if needed (though it's already done in onCreate)
+        // Make the text fields editable to allow direct input with geocoding
+        sourceEditText.setFocusableInTouchMode(true); // Make it editable
+        destinationEditText.setFocusableInTouchMode(true);
         
-        // Set up click listeners for both source and destination to trigger Places Autocomplete
-        sourceEditText.setOnClickListener(v -> {
-            openPlacesAutocomplete(0); // 0 for source
-        });
-        
-        destinationEditText.setOnClickListener(v -> {
-            openPlacesAutocomplete(1); // 1 for destination
-        });
-        
-        // Also maintain the geocoding functionality for manual text input
+        // Add text change listeners to geocode locations as user types
         sourceEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 String text = sourceEditText.getText().toString().trim();
-                // Only geocode if it's a user-entered location (not one set by Places)
-                if (!text.startsWith("Current Location") && !isSelectingFromPlaces) {
+                // Only geocode if it's a user-entered location (not one set by the current location feature)
+                if (!text.startsWith("Current Location")) {
                     geocodeLocation(text, 0); // 0 for source
                 }
             }
@@ -304,15 +274,12 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         
         destinationEditText.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
-                String text = destinationEditText.getText().toString().trim();
-                // Only geocode if it's a user-entered location (not one set by Places)
-                if (!isSelectingFromPlaces) {
-                    geocodeLocation(text, 1); // 1 for destination
-                }
+                // When user finishes typing in destination field, geocode the location
+                geocodeLocation(destinationEditText.getText().toString().trim(), 1); // 1 for destination
             }
         });
         
-        // Add text watcher to geocode as user types (with delay to avoid too many calls)
+        // Also add a text watcher to geocode as user types (with delay to avoid too many calls)
         sourceEditText.addTextChangedListener(new TextWatcher() {
             private Handler handler = new Handler();
             private Runnable geocodeRunnable;
@@ -331,8 +298,8 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             @Override
             public void afterTextChanged(Editable s) {
                 String text = s.toString().trim();
-                // Only geocode if it's a user-entered location (not one set by Places)
-                if (!text.startsWith("Current Location") && !isSelectingFromPlaces && !text.isEmpty()) {
+                // Only geocode if it's a user-entered location (not one set by the current location feature)
+                if (!text.startsWith("Current Location") && !text.isEmpty()) {
                     // Post a new runnable to geocode after a delay
                     geocodeRunnable = () -> geocodeLocation(text, 0); // 0 for source
                     handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
@@ -358,8 +325,8 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             @Override
             public void afterTextChanged(Editable s) {
                 String text = s.toString().trim();
-                // Only geocode if it's a user-entered location (not one set by Places)
-                if (!isSelectingFromPlaces && !text.isEmpty()) {
+                // Only geocode if it's a user-entered location (not one from a previous Places selection)
+                if (!text.isEmpty()) {
                     // Post a new runnable to geocode after a delay
                     geocodeRunnable = () -> geocodeLocation(text, 1); // 1 for destination
                     handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
@@ -368,86 +335,9 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         });
     }
     
-    // Add a flag to track when user is selecting from Places Autocomplete
-    private boolean isSelectingFromPlaces = false;
-    
-    private void openPlacesAutocomplete(int locationType) {
-        // Create a list of fields to return from the Place object
-        List<com.google.android.libraries.places.api.model.Place.Field> fields = 
-            Arrays.asList(
-                com.google.android.libraries.places.api.model.Place.Field.ID,
-                com.google.android.libraries.places.api.model.Place.Field.NAME,
-                com.google.android.libraries.places.api.model.Place.Field.LAT_LNG,
-                com.google.android.libraries.places.api.model.Place.Field.ADDRESS
-            );
 
-        // Create the autocomplete intent
-        com.google.android.libraries.places.widget.Autocomplete.IntentBuilder builder = 
-            new com.google.android.libraries.places.widget.Autocomplete.IntentBuilder(
-                com.google.android.libraries.places.widget.AutocompleteActivityMode.OVERLAY, fields);
-        
-        // Limit to India
-        builder.setLocationRestriction(
-            com.google.android.gms.maps.model.LatLngBounds.builder()
-                .include(new com.google.android.gms.maps.model.LatLng(8.0, 68.0))  // SW corner of India
-                .include(new com.google.android.gms.maps.model.LatLng(37.0, 98.0)) // NE corner of India
-                .build()
-        );
-
-        try {
-            Intent intent = builder.build(this);
-            if (locationType == 0) { // Source
-                sourceLocationLauncher.launch(intent);
-            } else { // Destination
-                destinationLocationLauncher.launch(intent);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Places API error: " + e.getMessage());
-            // Fallback: Show a message to the user to enter location manually
-            Toast.makeText(this, "Places API not available. Please enter location manually.", Toast.LENGTH_LONG).show();
-        }
-    }
     
-    private void handlePlaceSelection(androidx.activity.result.ActivityResult result, int locationType) {
-        if (result.getResultCode() == RESULT_OK) {
-            Intent data = result.getData();
-            if (data != null) {
-                com.google.android.libraries.places.api.model.Place place = 
-                    com.google.android.libraries.places.widget.Autocomplete
-                        .getPlaceFromIntent(data);
-                
-                if (place != null) {
-                    isSelectingFromPlaces = true;
-                    
-                    if (locationType == 0) { // Source
-                        sourceLatLng = place.getLatLng();
-                        sourceAddress = place.getAddress();
-                        sourceEditText.setText(place.getName());
-                    } else { // Destination
-                        destinationLatLng = place.getLatLng();
-                        destinationAddress = place.getAddress();
-                        destinationEditText.setText(place.getName());
-                    }
-                    
-                    // Update the map
-                    updateMarkersAndRoute();
-                    
-                    // Reset the flag after a short delay to avoid triggering geocoding
-                    new Handler().postDelayed(() -> isSelectingFromPlaces = false, 500);
-                }
-            }
-        } else if (result.getResultCode() == RESULT_CANCELED) {
-            // User cancelled the operation
-            if (locationType == 0) {
-                Log.d(TAG, "Source location selection cancelled");
-            } else {
-                Log.d(TAG, "Destination location selection cancelled");
-            }
-        }
-        // Note: For Places Autocomplete errors, the error status is handled differently
-        // and typically a result code other than RESULT_OK or RESULT_CANCELED indicates 
-        // a special case, but the Places SDK handles most errors internally
-    }
+
     
     /**
      * Geocodes a location string to coordinates using Android's Geocoder
@@ -778,4 +668,6 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             }
         });
     }
+    
+
 }
