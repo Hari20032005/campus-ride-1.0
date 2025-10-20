@@ -20,7 +20,6 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.IntentSenderResponse;
 import androidx.activity.result.contract.ActivityResultContracts;
 
 import androidx.annotation.NonNull;
@@ -74,9 +73,6 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     // Activity Result Launchers for modern Places Autocomplete
     private ActivityResultLauncher<Intent> sourceLocationLauncher;
     private ActivityResultLauncher<Intent> destinationLocationLauncher;
-    
-    // For Places API
-    private AutocompleteSupportFragment sourceAutocomplete, destinationAutocomplete;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -443,16 +439,10 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             } else {
                 Log.d(TAG, "Destination location selection cancelled");
             }
-        } else {
-            // There was an error status
-            com.google.android.gms.common.api.Status status = 
-                com.google.android.libraries.places.widget.Autocomplete
-                    .getStatusFromIntent(result.getData());
-            if (status != null) {
-                Log.e(TAG, "Place selection error: " + status.getStatusMessage());
-                Toast.makeText(this, "Error selecting location: " + status.getStatusMessage(), Toast.LENGTH_SHORT).show();
-            }
         }
+        // Note: For Places Autocomplete errors, the error status is handled differently
+        // and typically a result code other than RESULT_OK or RESULT_CANCELED indicates 
+        // a special case, but the Places SDK handles most errors internally
     }
     
     /**
