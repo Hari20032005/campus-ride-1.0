@@ -259,31 +259,14 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     }
     
     private void setupPlacesAutocomplete() {
-        // Make the text fields editable to allow direct input with geocoding
-        sourceEditText.setFocusableInTouchMode(true); // Make it editable
-        destinationEditText.setFocusableInTouchMode(true);
+        // Set threshold to 2 characters for better suggestion experience
+        sourceEditText.setThreshold(2);
+        destinationEditText.setThreshold(2);
         
-        // Add text change listeners to geocode locations as user types
-        sourceEditText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                String text = sourceEditText.getText().toString().trim();
-                // Only geocode if it's a user-entered location (not one set by the current location feature)
-                if (!text.startsWith("Current Location")) {
-                    geocodeLocation(text, 0); // 0 for source
-                }
-            }
-        });
-        
-        destinationEditText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                // When user finishes typing in destination field, geocode the location
-                geocodeLocation(destinationEditText.getText().toString().trim(), 1); // 1 for destination
-            }
-        });
-        
-        // Also add a text watcher to provide location suggestions as user types
+        // Add text change listeners to provide location suggestions as user types and geocode locations
         sourceEditText.addTextChangedListener(new TextWatcher() {
             private Handler handler = new Handler();
+            private Runnable suggestionRunnable;
             private Runnable geocodeRunnable;
 
             @Override
@@ -291,17 +274,20 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Cancel any pending geocoding when text changes
-                if (geocodeRunnable != null) {
-                    handler.removeCallbacks(geocodeRunnable);
+                // Cancel any pending suggestion updates
+                if (suggestionRunnable != null) {
+                    handler.removeCallbacks(suggestionRunnable);
                 }
                 
-                // Provide suggestions based on input
                 String input = s.toString().trim();
-                if (input.length() > 2) { // Only search if user has typed more than 2 characters
-                    // Show suggestions in the AutoCompleteTextView dropdown
-                    geocodeRunnable = () -> provideLocationSuggestions(input, 0); // 0 for source
-                    handler.postDelayed(geocodeRunnable, 500); // 0.5 second delay for suggestions
+                if (!input.isEmpty() && input.length() >= 2) {
+                    // Show suggestions after a short delay to avoid excessive API calls
+                    suggestionRunnable = () -> {
+                        provideLocationSuggestions(input, 0); // 0 for source
+                        // Force the dropdown to show
+                        sourceEditText.showDropDown();
+                    };
+                    handler.postDelayed(suggestionRunnable, 300); // 300ms delay for better UX
                 } else {
                     // Clear suggestions if input is too short
                     android.widget.ArrayAdapter<String> emptyAdapter = 
@@ -316,6 +302,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 String text = s.toString().trim();
                 // Only geocode if it's a user-entered location (not one set by the current location feature)
                 if (!text.startsWith("Current Location") && !text.isEmpty()) {
+                    // Cancel any pending geocoding
+                    if (geocodeRunnable != null) {
+                        handler.removeCallbacks(geocodeRunnable);
+                    }
+                    
                     // Post a new runnable to geocode after a delay
                     geocodeRunnable = () -> geocodeLocation(text, 0); // 0 for source
                     handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
@@ -326,12 +317,17 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         // Set item click listener to handle selection from dropdown
         sourceEditText.setOnItemClickListener((parent, view, position, id) -> {
             String selectedLocation = (String) parent.getItemAtPosition(position);
-            // When user selects from dropdown, geocode the selected item
+            // Set the selected location in the text field
+            sourceEditText.setText(selectedLocation);
+            sourceEditText.setSelection(selectedLocation.length()); // Move cursor to end
+            // Immediately geocode the selected location
             geocodeLocation(selectedLocation, 0); // 0 for source
         });
         
+        // Add similar functionality for destination
         destinationEditText.addTextChangedListener(new TextWatcher() {
             private Handler handler = new Handler();
+            private Runnable suggestionRunnable;
             private Runnable geocodeRunnable;
 
             @Override
@@ -339,16 +335,20 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // Cancel any pending geocoding when text changes
-                if (geocodeRunnable != null) {
-                    handler.removeCallbacks(geocodeRunnable);
+                // Cancel any pending suggestion updates
+                if (suggestionRunnable != null) {
+                    handler.removeCallbacks(suggestionRunnable);
                 }
                 
-                // Provide suggestions based on input
                 String input = s.toString().trim();
-                if (input.length() > 2) { // Only search if user has typed more than 2 characters
-                    geocodeRunnable = () -> provideLocationSuggestions(input, 1); // 1 for destination
-                    handler.postDelayed(geocodeRunnable, 500); // 0.5 second delay for suggestions
+                if (!input.isEmpty() && input.length() >= 2) {
+                    // Show suggestions after a short delay to avoid excessive API calls
+                    suggestionRunnable = () -> {
+                        provideLocationSuggestions(input, 1); // 1 for destination
+                        // Force the dropdown to show
+                        destinationEditText.showDropDown();
+                    };
+                    handler.postDelayed(suggestionRunnable, 300); // 300ms delay for better UX
                 } else {
                     // Clear suggestions if input is too short
                     android.widget.ArrayAdapter<String> emptyAdapter = 
@@ -363,6 +363,11 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 String text = s.toString().trim();
                 // Only geocode if it's a user-entered location (not one from a previous Places selection)
                 if (!text.isEmpty()) {
+                    // Cancel any pending geocoding
+                    if (geocodeRunnable != null) {
+                        handler.removeCallbacks(geocodeRunnable);
+                    }
+                    
                     // Post a new runnable to geocode after a delay
                     geocodeRunnable = () -> geocodeLocation(text, 1); // 1 for destination
                     handler.postDelayed(geocodeRunnable, 1000); // 1 second delay
@@ -373,7 +378,10 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         // Set item click listener to handle selection from dropdown
         destinationEditText.setOnItemClickListener((parent, view, position, id) -> {
             String selectedLocation = (String) parent.getItemAtPosition(position);
-            // When user selects from dropdown, geocode the selected item
+            // Set the selected location in the text field
+            destinationEditText.setText(selectedLocation);
+            destinationEditText.setSelection(selectedLocation.length()); // Move cursor to end
+            // Immediately geocode the selected location
             geocodeLocation(selectedLocation, 1); // 1 for destination
         });
     }
