@@ -440,45 +440,53 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     private void provideLocationSuggestions(String input, int locationType) {
         if (input.isEmpty()) return;
         
-        // Create mock suggestions based on common location patterns to ensure dropdown appears
         List<String> suggestions = new ArrayList<>();
         
-        // Add some mock suggestions that start with the input to ensure dropdown appears
-        // In a real app with Google Places API, this would fetch real suggestions
-        String[] mockSuggestions = {
-            input + " School",
-            input + " College",
-            input + " Station",
-            input + " Mall",
-            input + " Hospital",
-            input + " Market",
-            input + " Park",
-            input + " Tower",
-            input + " Avenue",
-            input + " Road",
-            input + " Nagar",
-            input + " Center",
-            input + " University",
-            input + " Circle"
+        // India-specific location suggestions to ensure meaningful results
+        String[] indiaLocations = {
+            "Mumbai, Maharashtra", "Delhi, India", "Bangalore, Karnataka", "Hyderabad, Telangana",
+            "Ahmedabad, Gujarat", "Chennai, Tamil Nadu", "Kolkata, West Bengal", "Surat, Gujarat",
+            "Pune, Maharashtra", "Jaipur, Rajasthan", "Lucknow, Uttar Pradesh", "Kanpur, Uttar Pradesh",
+            "Nagpur, Maharashtra", "Indore, Madhya Pradesh", "Thane, Maharashtra", "Bhopal, Madhya Pradesh",
+            "Visakhapatnam, Andhra Pradesh", "Pimpri-Chinchwad, Maharashtra", "Patna, Bihar", "Vadodara, Gujarat",
+            "Ghaziabad, Uttar Pradesh", "Ludhiana, Punjab", "Agra, Uttar Pradesh", "Nashik, Maharashtra",
+            "Faridabad, Haryana", "Meerut, Uttar Pradesh", "Rajkot, Gujarat", "Kalyan-Dombivali, Maharashtra",
+            "Vasai-Virar, Maharashtra", "Varanasi, Uttar Pradesh", "Srinagar, Jammu and Kashmir", "Aurangabad, Maharashtra",
+            "Dhanbad, Jharkhand", "Amritsar, Punjab", "Navi Mumbai, Maharashtra", "Allahabad, Uttar Pradesh",
+            "Ranchi, Jharkhand", "Howrah, West Bengal", "Coimbatore, Tamil Nadu", "Jabalpur, Madhya Pradesh",
+            "Gwalior, Madhya Pradesh", "Vijayawada, Andhra Pradesh", "Jodhpur, Rajasthan", "Madurai, Tamil Nadu",
+            "Raipur, Chhattisgarh", "Kota, Rajasthan", "Chandigarh, India", "Guwahati, Assam", "Solapur, Maharashtra",
+            "Hubli-Dharwad, Karnataka", "Bareilly, Uttar Pradesh", "Moradabad, Uttar Pradesh", "Mysore, Karnataka",
+            "Gurgaon, Haryana", "Aligarh, Uttar Pradesh", "Jalandhar, Punjab", "Tiruchirappalli, Tamil Nadu",
+            "Bhubaneswar, Odisha", "Salem, Tamil Nadu", "Warangal, Telangana", "Mira-Bhayandar, Maharashtra",
+            "Thiruvananthapuram, Kerala", "Bhiwandi, Maharashtra", "Saharanpur, Uttar Pradesh", "Guntur, Andhra Pradesh",
+            "Amravati, Maharashtra", "Bikaner, Rajasthan", "Noida, Uttar Pradesh", "Jamshedpur, Jharkhand",
+            "Bhilai, Chhattisgarh", "Cuttack, Odisha", "Kochi, Kerala", "Udaipur, Rajasthan", "Bhavnagar, Gujarat",
+            "Dehradun, Uttarakhand", "Asansol, West Bengal", "Nanded, Maharashtra", "Ajmer, Rajasthan",
+            "Jamnagar, Gujarat", "Ujjain, Madhya Pradesh", "Sangli, Maharashtra", "Mangalore, Karnataka",
+            "Bokaro, Jharkhand", "Adoni, Andhra Pradesh", "Tirunelveli, Tamil Nadu", "Latur, Maharashtra",
+            "Dhule, Maharashtra", "Korba, Chhattisgarh", "Bhilwara, Rajasthan", "Baranagar, West Bengal"
         };
         
-        // Add suggestions that start with the user input
-        for (String suggestion : mockSuggestions) {
-            if (suggestion.toLowerCase().startsWith(input.toLowerCase())) {
-                suggestions.add(suggestion);
+        // Find locations that contain the input text
+        String lowerInput = input.toLowerCase();
+        for (String location : indiaLocations) {
+            if (location.toLowerCase().contains(lowerInput) || location.toLowerCase().startsWith(lowerInput)) {
+                suggestions.add(location);
+                if (suggestions.size() >= 8) break; // Limit to first 8 matches
             }
         }
         
-        // Also try to get real suggestions from Geocoder as backup
+        // Also try to get real suggestions from Geocoder for more specific/local results
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
-            List<Address> addresses = geocoder.getFromLocationName(input, 5);
+            List<Address> addresses = geocoder.getFromLocationName(input + ", India", 5);
             if (addresses != null && !addresses.isEmpty()) {
                 for (Address addr : addresses) {
-                    // Only add if it's not duplicate
                     String fullAddress = addr.getAddressLine(0);
                     if (fullAddress != null && !suggestions.contains(fullAddress)) {
                         suggestions.add(0, fullAddress); // Add to beginning to prioritize
+                        if (suggestions.size() > 8) suggestions.remove(suggestions.size() - 1); // Keep list size manageable
                     }
                 }
             }
