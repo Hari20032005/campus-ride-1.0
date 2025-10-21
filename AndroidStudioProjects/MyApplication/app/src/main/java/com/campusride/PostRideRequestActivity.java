@@ -48,6 +48,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
@@ -58,7 +59,8 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
 
     private static final String TAG = "PostRideRequest";
     
-    private EditText sourceEditText, destinationEditText, dateEditText, timeEditText;
+    private android.widget.AutoCompleteTextView sourceEditText, destinationEditText;
+    private EditText dateEditText, timeEditText;
     private Button postRequestButton, useCurrentLocationButton;
     private TextView distanceTextView, timeTextView, fareTextView;
     private SupportMapFragment mapFragment;
@@ -416,18 +418,60 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         // Use Geocoder to find potential matches for the input text
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
         try {
-            // Get up to 5 suggestions for the input
-            List<Address> suggestions = geocoder.getFromLocationName(input, 5);
+            // Get up to 5 suggestions for the input - note that Geocoder does not support
+            // partial matching like Google Places API, so this is a workaround
+            List<Address> addresses = geocoder.getFromLocationName(input, 5);
             
-            if (suggestions != null && !suggestions.isEmpty()) {
-                Log.d(TAG, "Found " + suggestions.size() + " suggestions for: " + input);
-                // In a proper implementation, you would create a dropdown or suggestion list
-                // to display these suggestions to the user for selection
+            if (addresses != null && !addresses.isEmpty()) {
+                Log.d(TAG, "Found " + addresses.size() + " suggestions for: " + input);
+                
+                // Extract address strings for display in AutoComplete
+                List<String> suggestions = new ArrayList<>();
+                for (Address addr : addresses) {
+                    if (addr.getFeatureName() != null) {
+                        suggestions.add(addr.getFeatureName() + ", " + 
+                                      (addr.getSubAdminArea() != null ? addr.getSubAdminArea() + ", " : "") + 
+                                      (addr.getLocality() != null ? addr.getLocality() : ""));
+                    } else if (addr.getAddressLine(0) != null) {
+                        suggestions.add(addr.getAddressLine(0));
+                    }
+                }
+                
+                // Create and set adapter for AutoCompleteTextView
+                android.widget.ArrayAdapter<String> adapter = 
+                    new android.widget.ArrayAdapter<>(this, 
+                        android.R.layout.simple_dropdown_item_1line, suggestions);
+                
+                if (locationType == 0) { // Source
+                    sourceEditText.setAdapter(adapter);
+                } else { // Destination
+                    destinationEditText.setAdapter(adapter);
+                }
             } else {
                 Log.d(TAG, "No suggestions found for: " + input);
+                // Set empty adapter if no suggestions found
+                android.widget.ArrayAdapter<String> emptyAdapter = 
+                    new android.widget.ArrayAdapter<>(this, 
+                        android.R.layout.simple_dropdown_item_1line, new ArrayList<>());
+                
+                if (locationType == 0) { // Source
+                    sourceEditText.setAdapter(emptyAdapter);
+                } else { // Destination
+                    destinationEditText.setAdapter(emptyAdapter);
+                }
             }
         } catch (IOException e) {
             Log.e(TAG, "Error getting suggestions: " + e.getMessage());
+            // Set empty adapter on error
+            android.widget.ArrayAdapter<String> emptyAdapter = 
+                new android.widget.ArrayAdapter<>(this, 
+                    android.R.layout.simple_dropdown_item_1line, new ArrayList<>());
+            
+            if (locationType == 0) { // Source
+                sourceEditText.setAdapter(emptyAdapter);
+            } else { // Destination
+                destinationEditText.setAdapter(emptyAdapter);
+            }
         }
     }
     
