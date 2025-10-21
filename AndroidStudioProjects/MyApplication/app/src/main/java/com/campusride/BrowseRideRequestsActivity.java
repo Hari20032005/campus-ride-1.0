@@ -69,6 +69,16 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
             public void onViewDetails(PassengerRideRequest request) {
                 viewRideRequestDetails(request);
             }
+            
+            @Override
+            public void onViewOnMap(PassengerRideRequest request) {
+                viewRideOnMap(request);
+            }
+            
+            @Override
+            public void onNavigate(PassengerRideRequest request) {
+                navigateToRide(request);
+            }
         });
         rideRequestsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         rideRequestsRecyclerView.setAdapter(rideRequestAdapter);
@@ -298,5 +308,49 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
         Intent intent = new Intent(this, DriverRideRequestDetailsActivity.class);
         intent.putExtra("REQUEST_ID", request.getRequestId());
         startActivity(intent);
+    }
+    
+    /**
+     * Shows the ride request locations on a map
+     * @param request The ride request to display on map
+     */
+    private void viewRideOnMap(PassengerRideRequest request) {
+        // Create intent to show the locations on a map
+        Intent intent = new Intent(this, MapsActivity.class);
+        intent.putExtra("SOURCE_LAT", request.getSourceLat());
+        intent.putExtra("SOURCE_LNG", request.getSourceLng());
+        intent.putExtra("DESTINATION_LAT", request.getDestinationLat());
+        intent.putExtra("DESTINATION_LNG", request.getDestinationLng());
+        intent.putExtra("SOURCE_NAME", request.getSource());
+        intent.putExtra("DESTINATION_NAME", request.getDestination());
+        intent.putExtra("MODE", "view_locations");
+        startActivity(intent);
+    }
+    
+    /**
+     * Opens Google Maps to navigate from source to destination
+     * @param request The ride request to navigate to
+     */
+    private void navigateToRide(PassengerRideRequest request) {
+        try {
+            // Create Google Maps navigation intent
+            String uri = "google.navigation:q=" + request.getDestinationLat() + "," + request.getDestinationLng();
+            Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
+            intent.setPackage("com.google.android.apps.maps");
+            
+            // Check if Google Maps is installed
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                // If Google Maps is not installed, open in browser
+                String webUri = "https://www.google.com/maps/dir/?api=1&origin=" + 
+                               request.getSourceLat() + "," + request.getSourceLng() + 
+                               "&destination=" + request.getDestinationLat() + "," + request.getDestinationLng();
+                Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
+                startActivity(webIntent);
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "Error opening navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
     }
 }

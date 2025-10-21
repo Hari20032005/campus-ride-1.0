@@ -142,7 +142,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginBottom="@dimen/spacing_small">
 
             <Button
                 android:id="@+id/acceptButton"
@@ -162,6 +163,31 @@
                 android:layout_marginStart="@dimen/spacing_small"
                 style="@style/OutlinedButtonStyle"
                 android:visibility="gone" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/viewOnMapButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_weight="1"
+                android:text="View on Map"
+                android:layout_marginEnd="@dimen/spacing_small"
+                style="@style/OutlinedButtonStyle" />
+
+            <Button
+                android:id="@+id/navigateButton"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_weight="1"
+                android:text="Navigate"
+                android:layout_marginStart="@dimen/spacing_small"
+                style="@style/ButtonStyle" />
 
         </LinearLayout>
 

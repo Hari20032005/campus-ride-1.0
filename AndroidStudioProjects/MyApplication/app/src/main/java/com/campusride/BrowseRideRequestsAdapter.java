@@ -21,6 +21,8 @@ public class BrowseRideRequestsAdapter extends RecyclerView.Adapter<BrowseRideRe
     public interface OnRequestActionListener {
         void onAcceptRequest(PassengerRideRequest request);
         void onViewDetails(PassengerRideRequest request);
+        void onViewOnMap(PassengerRideRequest request);
+        void onNavigate(PassengerRideRequest request);
     }
 
     public BrowseRideRequestsAdapter(List<PassengerRideRequest> requests, OnRequestActionListener listener) {
@@ -54,7 +56,7 @@ public class BrowseRideRequestsAdapter extends RecyclerView.Adapter<BrowseRideRe
     class RequestViewHolder extends RecyclerView.ViewHolder {
         private TextView passengerNameTextView, sourceTextView, destinationTextView, 
                         dateTextView, timeTextView, statusTextView;
-        private Button acceptButton, viewDetailsButton;
+        private Button acceptButton, viewDetailsButton, viewOnMapButton, navigateButton;
 
         public RequestViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -66,6 +68,8 @@ public class BrowseRideRequestsAdapter extends RecyclerView.Adapter<BrowseRideRe
             statusTextView = itemView.findViewById(R.id.statusTextView);
             acceptButton = itemView.findViewById(R.id.acceptButton);
             viewDetailsButton = itemView.findViewById(R.id.viewDetailsButton);
+            viewOnMapButton = itemView.findViewById(R.id.viewOnMapButton);
+            navigateButton = itemView.findViewById(R.id.navigateButton);
         }
 
         public void bind(PassengerRideRequest request) {
@@ -104,6 +108,18 @@ public class BrowseRideRequestsAdapter extends RecyclerView.Adapter<BrowseRideRe
             viewDetailsButton.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onViewDetails(request);
+                }
+            });
+            
+            viewOnMapButton.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onViewOnMap(request);
+                }
+            });
+            
+            navigateButton.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onNavigate(request);
                 }
             });
         }
