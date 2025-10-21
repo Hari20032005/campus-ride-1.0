@@ -476,12 +476,32 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             "Dhule, Maharashtra", "Korba, Chhattisgarh", "Bhilwara, Rajasthan", "Baranagar, West Bengal"
         };
         
-        // Find locations that contain the input text
-        String lowerInput = input.toLowerCase();
+        // Split the input into words to match partial components
+        String lowerInput = input.toLowerCase().trim();
+        String[] inputWords = lowerInput.split("\\s+"); // Split by any whitespace
+        
+        // Find locations that match the input pattern
         for (String location : indiaLocations) {
-            if (location.toLowerCase().contains(lowerInput) || location.toLowerCase().startsWith(lowerInput)) {
+            String lowerLocation = location.toLowerCase();
+            
+            // Check if the entire input matches (start or contains)
+            if (lowerLocation.contains(lowerInput) || lowerLocation.startsWith(lowerInput)) {
                 suggestions.add(location);
-                if (suggestions.size() >= 8) break; // Limit to first 8 matches
+                if (suggestions.size() >= 6) break; // Limit initial matches
+            }
+            // If we have multiple input words, try to match them individually in the location
+            else if (inputWords.length > 1) {
+                boolean allWordsMatch = true;
+                for (String word : inputWords) {
+                    if (!lowerLocation.contains(word.trim()) && !word.trim().isEmpty()) {
+                        allWordsMatch = false;
+                        break;
+                    }
+                }
+                if (allWordsMatch) {
+                    suggestions.add(location);
+                    if (suggestions.size() >= 8) break; // Limit to 8 matches total
+                }
             }
         }
         
@@ -492,9 +512,19 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
             if (addresses != null && !addresses.isEmpty()) {
                 for (Address addr : addresses) {
                     String fullAddress = addr.getAddressLine(0);
-                    if (fullAddress != null && !suggestions.contains(fullAddress)) {
-                        suggestions.add(0, fullAddress); // Add to beginning to prioritize
-                        if (suggestions.size() > 8) suggestions.remove(suggestions.size() - 1); // Keep list size manageable
+                    if (fullAddress != null) {
+                        // Only add if it's not already in our list
+                        boolean exists = false;
+                        for (String suggestion : suggestions) {
+                            if (suggestion.equals(fullAddress)) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            suggestions.add(0, fullAddress); // Add to beginning to prioritize
+                            if (suggestions.size() > 8) suggestions.remove(suggestions.size() - 1); // Keep list size manageable
+                        }
                     }
                 }
             }
