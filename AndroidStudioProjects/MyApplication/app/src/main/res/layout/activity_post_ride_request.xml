@@ -34,7 +34,7 @@
             android:orientation="vertical"
             android:padding="@dimen/spacing_medium">
 
-            <!-- Source Location with Use Current Location Button -->
+            <!-- Source Location with Use Current Location and Select on Map Buttons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -64,40 +64,71 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <Button
-                    android:id="@+id/useCurrentLocationButton"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="bottom"
-                    android:layout_marginBottom="8dp"
-                    android:text="Use Current"
+                    android:orientation="vertical">
+
+                    <Button
+                        android:id="@+id/useCurrentLocationButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Use Current"
+                        android:textSize="10sp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+                    <Button
+                        android:id="@+id/selectSourceOnMapButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select on Map"
+                        android:textSize="10sp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Destination Location with Select on Map Button -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginBottom="@dimen/spacing_medium">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/spacing_small"
+                    android:hint="@string/destination"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/destinationEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:drawableStart="@drawable/ic_location"
+                        android:drawablePadding="@dimen/spacing_small"
+                        android:padding="@dimen/spacing_small"
+                        android:completionThreshold="2"
+                        android:dropDownHeight="200dp"
+                        android:dropDownWidth="match_parent"
+                        android:popupBackground="@color/white" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/selectDestinationOnMapButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="4dp"
+                    android:text="Select on Map"
                     android:textSize="12sp"
                     style="@style/Widget.MaterialComponents.Button.TextButton" />
 
             </LinearLayout>
-
-            <!-- Destination Location -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_medium"
-                android:hint="@string/destination"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                <AutoCompleteTextView
-                    android:id="@+id/destinationEditText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:drawableStart="@drawable/ic_location"
-                    android:drawablePadding="@dimen/spacing_small"
-                    android:padding="@dimen/spacing_small"
-                    android:completionThreshold="3"
-                    android:dropDownHeight="200dp"
-                    android:dropDownWidth="match_parent"
-                    android:popupBackground="@color/white" />
-
-            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Date and Time Section -->
             <LinearLayout

@@ -32,13 +32,12 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
+import android.app.AlertDialog;
+import com.google.android.gms.maps.model.LatLngBounds;import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.MarkerOptions;import com.google.android.gms.maps.model.MarkerOptions;import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
-import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 import com.google.firebase.auth.FirebaseUser;
@@ -61,7 +60,7 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
     
     private android.widget.AutoCompleteTextView sourceEditText, destinationEditText;
     private EditText dateEditText, timeEditText;
-    private Button postRequestButton, useCurrentLocationButton;
+    private Button postRequestButton, useCurrentLocationButton, selectSourceOnMapButton, selectDestinationOnMapButton;
     private TextView distanceTextView, timeTextView, fareTextView;
     private SupportMapFragment mapFragment;
     private GoogleMap mMap;
@@ -246,6 +245,8 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         timeEditText = findViewById(R.id.timeEditText);
         postRequestButton = findViewById(R.id.postRequestButton);
         useCurrentLocationButton = findViewById(R.id.useCurrentLocationButton);
+        selectSourceOnMapButton = findViewById(R.id.selectSourceOnMapButton);
+        selectDestinationOnMapButton = findViewById(R.id.selectDestinationOnMapButton);
         distanceTextView = findViewById(R.id.distanceTextView);
         timeTextView = findViewById(R.id.timeTextView);
         fareTextView = findViewById(R.id.fareTextView);
@@ -578,6 +579,20 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
                 useCurrentLocationAsSource();
             }
         });
+        
+        selectSourceOnMapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectLocationOnMap(0); // 0 for source
+            }
+        });
+        
+        selectDestinationOnMapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                selectLocationOnMap(1); // 1 for destination
+            }
+        });
     }
     
     private void useCurrentLocationAsSource() {
@@ -826,5 +841,145 @@ public class PostRideRequestActivity extends AppCompatActivity implements OnMapR
         });
     }
     
-
+    /**
+     * Opens the map for users to select a precise location by tapping or dragging
+     * @param locationType 0 for source, 1 for destination
+     */
+    private void selectLocationOnMap(int locationType) {
+        // Show a dialog or alert informing user about map selection
+        new AlertDialog.Builder(this)
+                .setTitle("Select Location on Map")
+                .setMessage("Tap or drag the map to select the precise location. Once you've found the right spot, tap the marker to confirm.")
+                .setPositiveButton("Continue", (dialog, which) -> {
+                    // Focus on the map and enable selection mode
+                    enableMapSelection(locationType);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+    
+    /**
+     * Enables map selection mode for precise location picking
+     * @param locationType 0 for source, 1 for destination
+     */
+    private void enableMapSelection(int locationType) {
+        if (mMap == null) {
+            Toast.makeText(this, "Map is not ready yet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        // Inform user how to select
+        Toast.makeText(this, "Tap on the map to select location", Toast.LENGTH_LONG).show();
+        
+        // Add a draggable marker for selection
+        final Marker[] tempMarker = {null};
+        final boolean[] locationSelected = {false};
+        
+        // Clear any existing markers
+        mMap.clear();
+        
+        // Add a temporary marker that can be moved
+        mMap.setOnMapClickListener(latLng -> {
+            // Remove previous marker if exists
+            if (tempMarker[0] != null) {
+                tempMarker[0].remove();
+            }
+            
+            // Add new marker at clicked location
+            tempMarker[0] = mMap.addMarker(new MarkerOptions()
+                    .position(latLng)
+                    .title(locationType == 0 ? "Source Location" : "Destination Location")
+                    .snippet("Tap to confirm this location")
+                    .draggable(true));
+            
+            // Move camera to center on the marker
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16));
+            
+            // Add info window click listener to confirm selection
+            mMap.setOnMarkerClickListener(marker -> {
+                if (marker.equals(tempMarker[0])) {
+                    // Confirm selection
+                    new AlertDialog.Builder(PostRideRequestActivity.this)
+                            .setTitle("Confirm Location")
+                            .setMessage("Use this location?")
+                            .setPositiveButton("Yes", (dialog, which) -> {
+                                // Set the selected location
+                                setLocationFromCoordinates(latLng, locationType);
+                                // Remove the temporary marker
+                                if (tempMarker[0] != null) {
+                                    tempMarker[0].remove();
+                                }
+                                // Re-enable normal map interactions
+                                mMap.setOnMapClickListener(null);
+                                mMap.setOnMarkerClickListener(null);
+                                // Update map with the confirmed route if both locations are set
+                                updateMarkersAndRoute();
+                            })
+                            .setNegativeButton("No", null)
+                            .show();
+                    return true; // Consume the event
+                }
+                return false; // Let default behavior happen
+            });
+        });
+    }
+    
+    /**
+     * Sets the location from coordinates and updates the corresponding EditText
+     * @param latLng The selected coordinates
+     * @param locationType 0 for source, 1 for destination
+     */
+    private void setLocationFromCoordinates(LatLng latLng, int locationType) {
+        // Reverse geocode the coordinates to get an address
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            
+            String addressString;
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                // Build a readable address from the components
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i <= address.getMaxAddressLineIndex(); i++) {
+                    if (i > 0) sb.append(", ");
+                    sb.append(address.getAddressLine(i));
+                }
+                addressString = sb.toString();
+            } else {
+                // If reverse geocoding fails, use coordinates as string
+                addressString = "Lat: " + latLng.latitude + ", Lng: " + latLng.longitude;
+            }
+            
+            // Update the appropriate location
+            if (locationType == 0) { // Source
+                sourceLatLng = latLng;
+                sourceAddress = addressString;
+                sourceEditText.setText(addressString);
+            } else { // Destination
+                destinationLatLng = latLng;
+                destinationAddress = addressString;
+                destinationEditText.setText(addressString);
+            }
+            
+            Toast.makeText(this, "Location selected: " + addressString, Toast.LENGTH_SHORT).show();
+            
+        } catch (IOException e) {
+            Log.e(TAG, "Error reverse geocoding coordinates", e);
+            // Fallback to coordinates as string
+            String coordString = "Lat: " + latLng.latitude + ", Lng: " + latLng.longitude;
+            
+            if (locationType == 0) { // Source
+                sourceLatLng = latLng;
+                sourceAddress = coordString;
+                sourceEditText.setText(coordString);
+            } else { // Destination
+                destinationLatLng = latLng;
+                destinationAddress = coordString;
+                destinationEditText.setText(coordString);
+            }
+            
+            Toast.makeText(this, "Location selected (coordinates only)", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
 }
