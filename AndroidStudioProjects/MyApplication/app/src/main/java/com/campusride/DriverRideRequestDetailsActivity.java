@@ -82,12 +82,14 @@ public class DriverRideRequestDetailsActivity extends AppCompatActivity {
             // Check if Google Maps is installed
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
+                Toast.makeText(this, "Navigating to pickup location (" + currentRequest.getSource() + ")", Toast.LENGTH_SHORT).show();
             } else {
                 // If Google Maps is not installed, open in browser
                 String webUri = "https://www.google.com/maps/dir/?api=1&destination=" + 
                                currentRequest.getSourceLat() + "," + currentRequest.getSourceLng();
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
+                Toast.makeText(this, "Opened navigation in browser to pickup location", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Toast.makeText(this, "Error opening navigation to pickup: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -112,12 +114,14 @@ public class DriverRideRequestDetailsActivity extends AppCompatActivity {
             // Check if Google Maps is installed
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
+                Toast.makeText(this, "Navigating to destination (" + currentRequest.getDestination() + ")", Toast.LENGTH_SHORT).show();
             } else {
                 // If Google Maps is not installed, open in browser
                 String webUri = "https://www.google.com/maps/dir/?api=1&destination=" + 
                                currentRequest.getDestinationLat() + "," + currentRequest.getDestinationLng();
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
+                Toast.makeText(this, "Opened navigation in browser to destination", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Toast.makeText(this, "Error opening navigation to destination: " + e.getMessage(), Toast.LENGTH_SHORT).show();

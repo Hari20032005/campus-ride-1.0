@@ -328,13 +328,13 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
     }
     
     /**
-     * Opens Google Maps to navigate from driver's current location to source, then to destination
+     * Opens Google Maps to navigate from driver's current location to source (pickup point)
      * @param request The ride request to navigate to
      */
     private void navigateToRide(PassengerRideRequest request) {
         try {
-            // For the Google Maps navigation, we'll navigate to the source first
-            // Then the driver can navigate to destination after picking up passenger
+            // Navigate to the source (pickup) location first
+            // After picking up passenger, driver should use "Navigate to Destination" button
             String uri = "google.navigation:q=" + request.getSourceLat() + "," + request.getSourceLng();
             Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
             intent.setPackage("com.google.android.apps.maps");
@@ -342,6 +342,7 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
             // Check if Google Maps is installed
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
+                Toast.makeText(this, "Navigating to pickup location. After picking up passenger, use 'Navigate to Destination' in ride details.", Toast.LENGTH_LONG).show();
             } else {
                 // If Google Maps is not installed, open in browser with directions
                 // This will show directions from current location to source
@@ -349,10 +350,8 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
                                request.getSourceLat() + "," + request.getSourceLng();
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
+                Toast.makeText(this, "Opened navigation in browser. After picking up passenger, use 'Navigate to Destination' in ride details.", Toast.LENGTH_LONG).show();
             }
-            
-            // Show a toast to inform driver about the navigation sequence
-            Toast.makeText(this, "Navigating to pickup location. After picking up passenger, navigate to destination.", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, "Error opening navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
