@@ -333,8 +333,14 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
      */
     private void navigateToRide(PassengerRideRequest request) {
         try {
-            // Navigate to the source (pickup) location first
-            // After picking up passenger, driver should use "Navigate to Destination" button
+            // DEBUG: Log the source and destination coordinates to verify we're navigating to the right place
+            Log.d("NAVIGATION_DEBUG", "Navigating to SOURCE: " + request.getSource() + 
+                  " (Lat: " + request.getSourceLat() + ", Lng: " + request.getSourceLng() + ")");
+            Log.d("NAVIGATION_DEBUG", "Destination would be: " + request.getDestination() + 
+                  " (Lat: " + request.getDestinationLat() + ", Lng: " + request.getDestinationLng() + ")");
+            
+            // Explicitly navigate to the SOURCE (pickup) location first
+            // This is CORRECT - we want drivers to go to pickup location first, not destination
             String uri = "google.navigation:q=" + request.getSourceLat() + "," + request.getSourceLng();
             Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
             intent.setPackage("com.google.android.apps.maps");
@@ -342,17 +348,22 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
             // Check if Google Maps is installed
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
-                Toast.makeText(this, "Navigating to pickup location. After picking up passenger, use 'Navigate to Destination' in ride details.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "NAVIGATING TO PICKUP: " + request.getSource() + 
+                              "\nAfter picking up passenger, use 'Navigate to Destination' in ride details.", 
+                              Toast.LENGTH_LONG).show();
             } else {
                 // If Google Maps is not installed, open in browser with directions
-                // This will show directions from current location to source
+                // This will show directions from current location to SOURCE (pickup)
                 String webUri = "https://www.google.com/maps/dir/?api=1&destination=" + 
                                request.getSourceLat() + "," + request.getSourceLng();
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
-                Toast.makeText(this, "Opened navigation in browser. After picking up passenger, use 'Navigate to Destination' in ride details.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "OPENED NAVIGATION IN BROWSER TO PICKUP: " + request.getSource() + 
+                              "\nAfter picking up passenger, use 'Navigate to Destination' in ride details.", 
+                              Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
+            Log.e("NAVIGATION_ERROR", "Error opening navigation", e);
             Toast.makeText(this, "Error opening navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
