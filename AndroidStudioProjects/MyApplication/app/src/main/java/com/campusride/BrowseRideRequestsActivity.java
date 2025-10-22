@@ -328,13 +328,14 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
     }
     
     /**
-     * Opens Google Maps to navigate from source to destination
+     * Opens Google Maps to navigate from driver's current location to source, then to destination
      * @param request The ride request to navigate to
      */
     private void navigateToRide(PassengerRideRequest request) {
         try {
-            // Create Google Maps navigation intent
-            String uri = "google.navigation:q=" + request.getDestinationLat() + "," + request.getDestinationLng();
+            // For the Google Maps navigation, we'll navigate to the source first
+            // Then the driver can navigate to destination after picking up passenger
+            String uri = "google.navigation:q=" + request.getSourceLat() + "," + request.getSourceLng();
             Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
             intent.setPackage("com.google.android.apps.maps");
             
@@ -342,13 +343,16 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
             } else {
-                // If Google Maps is not installed, open in browser
-                String webUri = "https://www.google.com/maps/dir/?api=1&origin=" + 
-                               request.getSourceLat() + "," + request.getSourceLng() + 
-                               "&destination=" + request.getDestinationLat() + "," + request.getDestinationLng();
+                // If Google Maps is not installed, open in browser with directions
+                // This will show directions from current location to source
+                String webUri = "https://www.google.com/maps/dir/?api=1&destination=" + 
+                               request.getSourceLat() + "," + request.getSourceLng();
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
             }
+            
+            // Show a toast to inform driver about the navigation sequence
+            Toast.makeText(this, "Navigating to pickup location. After picking up passenger, navigate to destination.", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(this, "Error opening navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

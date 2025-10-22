@@ -222,11 +222,38 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/navigateToSourceButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Navigate to Pickup"
+            android:layout_marginEnd="8dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+        <Button
+            android:id="@+id/navigateToDestinationButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Navigate to Destination"
+            android:layout_marginStart="8dp"
+            style="@style/Widget.MaterialComponents.Button" />
+
+    </LinearLayout>
+
     <Button
         android:id="@+id/completeRideButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Complete Ride"
+        android:layout_marginTop="16dp"
         style="@style/Widget.MaterialComponents.Button" />
 
 </LinearLayout>
