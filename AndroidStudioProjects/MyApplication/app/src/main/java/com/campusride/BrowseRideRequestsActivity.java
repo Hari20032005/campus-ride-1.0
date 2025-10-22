@@ -334,37 +334,47 @@ public class BrowseRideRequestsActivity extends AppCompatActivity {
     private void navigateToRide(PassengerRideRequest request) {
         try {
             // DEBUG: Log the source and destination coordinates to verify we're navigating to the right place
-            Log.d("NAVIGATION_DEBUG", "Navigating to SOURCE: " + request.getSource() + 
+            Log.d("NAVIGATION_DEBUG", "=== NAVIGATION VERIFICATION ===");
+            Log.d("NAVIGATION_DEBUG", "TARGET LOCATION: " + request.getSource() + 
                   " (Lat: " + request.getSourceLat() + ", Lng: " + request.getSourceLng() + ")");
-            Log.d("NAVIGATION_DEBUG", "Destination would be: " + request.getDestination() + 
-                  " (Lat: " + request.getDestinationLat() + ", Lng: " + request.getDestinationLng() + ")");
+            Log.d("NAVIGATION_DEBUG", "SOURCE TYPE: PICKUP LOCATION");
+            Log.d("NAVIGATION_DEBUG", "THIS IS THE CORRECT DESTINATION FOR INITIAL NAVIGATION");
+            Log.d("NAVIGATION_DEBUG", "================================");
             
-            // Explicitly navigate to the SOURCE (pickup) location first
-            // This is CORRECT - we want drivers to go to pickup location first, not destination
-            String uri = "google.navigation:q=" + request.getSourceLat() + "," + request.getSourceLng();
+            // ABSOLUTELY ENSURE WE NAVIGATE TO SOURCE (PICKUP) LOCATION FIRST
+            // UNDER NO CIRCUMSTANCES SHOULD WE USE DESTINATION COORDINATES HERE
+            double pickupLatitude = request.getSourceLat();
+            double pickupLongitude = request.getSourceLng();
+            String pickupLocationName = request.getSource();
+            
+            // CONSTRUCT URI USING ONLY PICKUP COORDINATES
+            String uri = "google.navigation:q=" + pickupLatitude + "," + pickupLongitude;
             Intent intent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(uri));
             intent.setPackage("com.google.android.apps.maps");
             
             // Check if Google Maps is installed
             if (intent.resolveActivity(getPackageManager()) != null) {
                 startActivity(intent);
-                Toast.makeText(this, "NAVIGATING TO PICKUP: " + request.getSource() + 
-                              "\nAfter picking up passenger, use 'Navigate to Destination' in ride details.", 
+                Toast.makeText(this, "📍 NAVIGATING TO PICKUP LOCATION\n" + 
+                              "目的地: " + pickupLocationName + "\n\n" +
+                              "After picking up passenger, open ride details and tap 'Navigate to Destination'", 
                               Toast.LENGTH_LONG).show();
             } else {
                 // If Google Maps is not installed, open in browser with directions
                 // This will show directions from current location to SOURCE (pickup)
                 String webUri = "https://www.google.com/maps/dir/?api=1&destination=" + 
-                               request.getSourceLat() + "," + request.getSourceLng();
+                               pickupLatitude + "," + pickupLongitude;
                 Intent webIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(webUri));
                 startActivity(webIntent);
-                Toast.makeText(this, "OPENED NAVIGATION IN BROWSER TO PICKUP: " + request.getSource() + 
-                              "\nAfter picking up passenger, use 'Navigate to Destination' in ride details.", 
+                Toast.makeText(this, "🌐 OPENED NAVIGATION IN BROWSER TO PICKUP LOCATION\n" + 
+                              "目的地: " + pickupLocationName + "\n\n" +
+                              "After picking up passenger, open ride details and tap 'Navigate to Destination'", 
                               Toast.LENGTH_LONG).show();
             }
         } catch (Exception e) {
-            Log.e("NAVIGATION_ERROR", "Error opening navigation", e);
-            Toast.makeText(this, "Error opening navigation: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("NAVIGATION_ERROR", "CRITICAL ERROR OPENING NAVIGATION TO PICKUP", e);
+            Toast.makeText(this, "❌ ERROR OPENING NAVIGATION: " + e.getMessage() + 
+                          "\nPlease contact support.", Toast.LENGTH_LONG).show();
         }
     }
 }
